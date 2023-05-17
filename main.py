@@ -1,5 +1,4 @@
-import audio_operations
-import history_handler
+from audio_processing import audio_operations
 
 
 def main():

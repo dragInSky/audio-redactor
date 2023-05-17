@@ -2,7 +2,7 @@ from datetime import datetime
 from pydub import AudioSegment
 from pydub.effects import speedup
 
-import history_handler
+from operations_history import history_handler
 
 
 def get_cur_date():
