@@ -1,14 +1,13 @@
-from pydub import AudioSegment
-
 import audio_operations
+import history_handler
 
 
 def main():
-    sound1 = AudioSegment.from_file("sample_data/s1.wav", format="wav")
+    sound1 = audio_operations.sound_from_file("sample_data/s1.wav", "wav")
     # sound2 = AudioSegment.from_file("sample_data/s2.wav", format="wav")
 
-    sound = audio_operations.change_speed(sound1, 0.5)
-    audio_operations.export(sound, "output/speedup.wav", "wav")
+    res_sound = audio_operations.start_cut(sound1, 1)
+    audio_operations.export(res_sound, "output/startCut.wav", "wav")
 
 
 if __name__ == '__main__':
