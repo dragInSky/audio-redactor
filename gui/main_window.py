@@ -12,15 +12,15 @@ class UiMainWindow:
     def __init__(self):
         self.fragment_cut_to = 0
         self.fragment_cut_from = 0
-        self.audio = AudioSegment.from_file('sample_data/s1.wav', format='wav')
-        self.cut_to = len(self.audio)
+        self.cut_to = 0
         self.cut_from = 0
         self.volume = base_values.VOLUME
         self.speed = base_values.SPEED
+        self.audio = AudioSegment.from_file('sample_data/s1.wav', format='wav')
 
     def setup_ui(self, main_window):
         self.audio_redactor = audio_redactor.AudioRedactor()
-        self.audio_redactor.setSound(self.audio)
+        self.import_sound()
 
         main_window.setObjectName("main_window")
         main_window.resize(850, 600)
@@ -53,28 +53,38 @@ class UiMainWindow:
         main_window.setWindowTitle("audio redactor")
         QtCore.QMetaObject.connectSlotsByName(main_window)
 
-    def reverse_event(self):
+    def import_sound(self):
+        self.audio_redactor.set_sound(self.audio)
+
+    def reverse_apply(self):
         self.audio_redactor.reverse()
-        self.history_update()
 
     def speed_change_event(self, value: float):
         self.speed = value
+        if self.check_box_speed.isChecked():
+            self.audio_redactor.refresh_speed()
+            self.audio_redactor.change_speed(self.speed)
+            self.history_update()
 
     def speed_apply(self):
         if self.check_box_speed.isChecked():
             self.audio_redactor.change_speed(self.speed)
         else:
-            self.audio_redactor.change_speed(base_values.SPEED)
+            self.audio_redactor.refresh_speed()
         self.history_update()
 
     def volume_change_event(self, value: float):
         self.volume = value
+        if self.check_box_volume.isChecked():
+            self.audio_redactor.refresh_volume()
+            self.audio_redactor.change_volume(self.volume)
+            self.history_update()
 
     def volume_apply(self):
-        if self.check_box_speed.isChecked():
+        if self.check_box_volume.isChecked():
             self.audio_redactor.change_volume(self.volume)
         else:
-            self.audio_redactor.change_volume(base_values.VOLUME)
+            self.audio_redactor.refresh_volume()
         self.history_update()
 
     def cut_from_change_event(self, value: float):
@@ -84,10 +94,7 @@ class UiMainWindow:
         self.cut_to = value
 
     def cut_apply(self):
-        if self.check_box_speed.isChecked():
-            self.audio_redactor.cut(self.cut_from, self.cut_to)
-        else:
-            self.audio_redactor.cut(self.cut_from, self.cut_to)
+        self.audio_redactor.cut(self.cut_from, self.cut_to)
         self.history_update()
 
     def fragment_cut_from_change_event(self, value: float):
@@ -97,22 +104,21 @@ class UiMainWindow:
         self.fragment_cut_to = value
 
     def fragment_cut_apply(self):
-        if self.check_box_speed.isChecked():
-            self.audio_redactor.fragment_cut(self.fragment_cut_from, self.fragment_cut_to)
-        else:
-            self.audio_redactor.fragment_cut(self.fragment_cut_from, self.fragment_cut_to)
+        self.audio_redactor.fragment_cut(self.fragment_cut_from, self.fragment_cut_to)
         self.history_update()
 
     def append_apply(self):
+        pass
         # self.audio_redactor.append()
-        self.history_update()
+        # self.history_update()
 
     def overlay_apply(self):
+        pass
         # self.audio_redactor.overlay()
-        self.history_update()
+        # self.history_update()
 
-    def export(self):
-        self.audio_redactor.export('output/output.wav', 'wav')
+    def export_sound(self):
+        self.audio_redactor.audio_export('output/output.wav', 'wav')
         self.history_update()
 
     def setup_import_layout(self):
@@ -141,7 +147,7 @@ class UiMainWindow:
         self.check_box_reverse.setObjectName("check_box_reverse")
         self.check_box_reverse.setText("reverse")
 
-        self.check_box_reverse.stateChanged.connect(self.reverse_event)
+        self.check_box_reverse.stateChanged.connect(self.reverse_apply)
 
         self.grid_layout.addWidget(self.check_box_reverse, 1, 0, 1, 1)
 
@@ -182,7 +188,7 @@ class UiMainWindow:
         self.check_box_volume.stateChanged.connect(self.volume_apply)
 
         self.double_spin_box_volume = QtWidgets.QDoubleSpinBox(parent=self.verticalLayoutWidget)
-        self.double_spin_box_volume.setMinimum(-99.0)
+        self.double_spin_box_volume.setMinimum(-60.0)
         self.double_spin_box_volume.setMaximum(20.0)
         self.double_spin_box_volume.setObjectName("double_spin_box_speed")
 
@@ -196,13 +202,11 @@ class UiMainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_cut")
 
-        self.check_box_cut = QtWidgets.QCheckBox(parent=self.verticalLayoutWidget)
-        self.check_box_cut.setObjectName("check_box_cut")
-        self.check_box_cut.setText("cut")
+        button_cut = QPushButton(parent=self.verticalLayoutWidget)
+        button_cut.setText("cut")
+        horizontal_layout.addWidget(button_cut)
 
-        horizontal_layout.addWidget(self.check_box_cut)
-
-        self.check_box_cut.stateChanged.connect(self.cut_apply)
+        button_cut.clicked.connect(self.cut_apply)
 
         label_from = QtWidgets.QLabel(parent=self.verticalLayoutWidget)
         label_from.setObjectName("label_from_cut")
@@ -232,13 +236,11 @@ class UiMainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_fragment")
 
-        self.check_box_fragment = QtWidgets.QCheckBox(parent=self.verticalLayoutWidget)
-        self.check_box_fragment.setObjectName("check_box_fragment")
-        self.check_box_fragment.setText("fragment cut")
+        button_fragment = QPushButton(parent=self.verticalLayoutWidget)
+        button_fragment.setText("fragment cut")
+        horizontal_layout.addWidget(button_fragment)
 
-        horizontal_layout.addWidget(self.check_box_fragment)
-
-        self.check_box_fragment.stateChanged.connect(self.fragment_cut_apply)
+        button_fragment.clicked.connect(self.fragment_cut_apply)
 
         label_from = QtWidgets.QLabel(parent=self.verticalLayoutWidget)
         label_from.setObjectName("label_from_fragment")
@@ -268,13 +270,11 @@ class UiMainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_append")
 
-        self.check_box_append = QtWidgets.QCheckBox(parent=self.verticalLayoutWidget)
-        self.check_box_append.setObjectName("check_box_append")
-        self.check_box_append.setText("append")
+        button_append = QPushButton(parent=self.verticalLayoutWidget)
+        button_append.setText("append")
+        horizontal_layout.addWidget(button_append)
 
-        horizontal_layout.addWidget(self.check_box_append)
-
-        self.check_box_append.stateChanged.connect(self.append_apply)
+        button_append.clicked.connect(self.append_apply)
 
         self.line_edit_append = QtWidgets.QLineEdit(parent=self.verticalLayoutWidget)
         self.line_edit_append.setObjectName("line_edit_path_append")
@@ -292,13 +292,11 @@ class UiMainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_overlay")
 
-        self.check_box_overlay = QtWidgets.QCheckBox(parent=self.verticalLayoutWidget)
-        self.check_box_overlay.setObjectName("check_box_overlay")
-        self.check_box_overlay.setText("overlay")
+        button_overlay = QPushButton(parent=self.verticalLayoutWidget)
+        button_overlay.setText("overlay")
+        horizontal_layout.addWidget(button_overlay)
 
-        horizontal_layout.addWidget(self.check_box_overlay)
-
-        self.check_box_overlay.stateChanged.connect(self.overlay_apply)
+        button_overlay.clicked.connect(self.overlay_apply)
 
         self.line_edit_overlay = QtWidgets.QLineEdit(parent=self.verticalLayoutWidget)
         self.line_edit_overlay.setObjectName("line_edit_path_overlay")
@@ -320,7 +318,7 @@ class UiMainWindow:
         button_export.setText("export")
         horizontal_layout.addWidget(button_export)
 
-        button_export.clicked.connect(self.export)
+        button_export.clicked.connect(self.export_sound)
 
         self.line_edit_export = QtWidgets.QLineEdit(parent=self.verticalLayoutWidget)
         self.line_edit_export.setObjectName("line_edit_path_export")
