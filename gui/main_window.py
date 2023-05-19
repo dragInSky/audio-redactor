@@ -23,13 +23,13 @@ class UiMainWindow:
         self.import_sound()
 
         main_window.setObjectName("main_window")
-        main_window.resize(850, 600)
+        main_window.resize(900, 600)
 
         self.central_widget = QtWidgets.QWidget(parent=main_window)
         self.central_widget.setObjectName("central_widget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(parent=self.central_widget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(500, 0, 350, 350))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(500, 0, 400, 600))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
 
         self.grid_layout = QtWidgets.QGridLayout(self.verticalLayoutWidget)
@@ -47,6 +47,7 @@ class UiMainWindow:
         self.setup_overlay_layout()
         self.setup_export_layout()
         self.setup_history()
+        self.setup_state()
 
         main_window.setCentralWidget(self.central_widget)
 
@@ -58,6 +59,7 @@ class UiMainWindow:
 
     def reverse_apply(self):
         self.audio_redactor.reverse()
+        self.history_update()
 
     def speed_change_event(self, value: float):
         self.speed = value
@@ -76,7 +78,7 @@ class UiMainWindow:
     def volume_change_event(self, value: float):
         self.volume = value
         if self.check_box_volume.isChecked():
-            self.audio_redactor.refresh_volume()
+            self.audio_redactor.silent_refresh_volume()
             self.audio_redactor.change_volume(self.volume)
             self.history_update()
 
@@ -95,6 +97,7 @@ class UiMainWindow:
 
     def cut_apply(self):
         self.audio_redactor.cut(self.cut_from, self.cut_to)
+        self.state_update()
         self.history_update()
 
     def fragment_cut_from_change_event(self, value: float):
@@ -105,6 +108,7 @@ class UiMainWindow:
 
     def fragment_cut_apply(self):
         self.audio_redactor.fragment_cut(self.fragment_cut_from, self.fragment_cut_to)
+        self.state_update()
         self.history_update()
 
     def append_apply(self):
@@ -341,3 +345,17 @@ class UiMainWindow:
         self.history_text.setObjectName("history_text")
         self.history_update()
         self.history_text.setReadOnly(True)
+
+    def state_update(self):
+        self.label_state.setText("sound length: " + str(len(self.audio_redactor.sound) / 1000) + " secs")
+
+    def setup_state(self):
+        horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.setObjectName("horizontal_layout_state")
+
+        self.label_state = QtWidgets.QLabel(parent=self.verticalLayoutWidget)
+        self.label_state.setObjectName("label_state")
+        horizontal_layout.addWidget(self.label_state)
+        self.state_update()
+
+        self.grid_layout.addLayout(horizontal_layout, 9, 0, 1, 1)
