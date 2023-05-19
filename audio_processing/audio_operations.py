@@ -10,27 +10,45 @@ def get_cur_date():
 
 
 def sound_from_file(file_path: str, fmt: str) -> AudioSegment:
-    return AudioSegment.from_file(file_path, fmt)
+    if fmt == 'wav' or fmt == 'mp3':
+        return AudioSegment.from_file(file_path, fmt)
+
+    history_handler.file_append(f'unknown file format: {fmt};\t[{get_cur_date()}]')
+    return AudioSegment.empty()
 
 
-def start_cut(sound: AudioSegment, start_pos: int) -> AudioSegment:
-    history_handler.file_append(f'file cut from {start_pos} sec;\t[{get_cur_date()}]')
+def start_cut(sound: AudioSegment, start_pos: float) -> AudioSegment:
+    if sound == AudioSegment.empty() or start_pos <= 0 or start_pos * 1000 >= len(sound):
+        history_handler.file_append(f'incorrect data or cut position;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
+    history_handler.file_append(f'file cut in {start_pos} secs from the start;\t[{get_cur_date()}]')
 
     start_pos *= 1000
 
     return sound[start_pos:len(sound)]
 
 
-def end_cut(sound: AudioSegment, end_pos: int) -> AudioSegment:
-    history_handler.file_append(f'file cut 0 - {end_pos} sec;\t[{get_cur_date()}]')
+def end_cut(sound: AudioSegment, end_pos: float) -> AudioSegment:
+    if sound == AudioSegment.empty() or end_pos <= 0 or end_pos * 1000 >= len(sound):
+        history_handler.file_append(f'incorrect data or cut position;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
+    history_handler.file_append(f'file cut in {end_pos} secs from the end;\t[{get_cur_date()}]')
 
     end_pos *= 1000
 
     return sound[:-end_pos]
 
 
-def cut(sound: AudioSegment, start_pos: int, end_pos: int) -> AudioSegment:
-    history_handler.file_append(f'file cut from {start_pos} to {end_pos} sec;\t[{get_cur_date()}]')
+def start_end_cut(sound: AudioSegment, start_pos: float, end_pos: float) -> AudioSegment:
+    if sound == AudioSegment.empty() or start_pos <= 0 or start_pos * 1000 >= len(sound) \
+            or end_pos <= 0 or end_pos * 1000 >= len(sound):
+        history_handler.file_append(f'incorrect data or cut positions;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
+    history_handler.file_append(f'file cut in {start_pos} secs from the start '
+                                f'and in {end_pos} secs from the end;\t[{get_cur_date()}]')
 
     start_pos *= 1000
     end_pos *= 1000
@@ -38,25 +56,87 @@ def cut(sound: AudioSegment, start_pos: int, end_pos: int) -> AudioSegment:
     return sound[start_pos:end_pos]
 
 
+def fragment_cut(sound: AudioSegment, start_pos: float, end_pos: float) -> AudioSegment:
+    if sound == AudioSegment.empty() or start_pos <= 0 or start_pos * 1000 >= len(sound) \
+            or end_pos <= 0 or end_pos * 1000 >= len(sound):
+        history_handler.file_append(f'incorrect data or cut positions;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
+    history_handler.file_append(f'fragment from {start_pos} to {end_pos} secs '
+                                f'was cut from the file;\t[{get_cur_date()}]')
+
+    start_pos *= 1000
+    end_pos *= 1000
+
+    return sound[:start_pos] + sound[end_pos:]
+
+
 def append(sound1: AudioSegment, sound2: AudioSegment) -> AudioSegment:
+    if sound1 == AudioSegment.empty() or sound2 == AudioSegment.empty():
+        history_handler.file_append(f'incorrect data;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
     history_handler.file_append(f'sound2 appended to the end of sound1;\t[{get_cur_date()}]')
 
     return sound1 + sound2
 
 
-def overlay(sound1: AudioSegment, sound2: AudioSegment) -> AudioSegment:
-    history_handler.file_append(f'overlay sound2 on sound1;\t[{get_cur_date()}]')
+def overlay(*sound_args: AudioSegment) -> AudioSegment:
+    for sound in sound_args:
+        if sound == AudioSegment.empty():
+            history_handler.file_append(f'incorrect data;\t[{get_cur_date()}]')
+            return AudioSegment.empty()
 
-    return sound1.overlay(sound2)
+    history_handler.file_append(f'overlay sounds;\t[{get_cur_date()}]')
+
+    res_sound = AudioSegment.empty()
+    for sound in sound_args:
+        if res_sound == AudioSegment.empty():
+            res_sound = sound
+        else:
+            res_sound = res_sound.overlay(sound)
+    return res_sound
 
 
 def reverse(sound: AudioSegment) -> AudioSegment:
+    if sound == AudioSegment.empty():
+        history_handler.file_append(f'incorrect data;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
     history_handler.file_append(f'sound reversed;\t[{get_cur_date()}]')
 
     return sound.reverse()
 
 
+def change_volume(sound: AudioSegment, value: float) -> AudioSegment:
+    if value >= 20:
+        value = 20
+        history_handler.file_append(f'max db to add: +20;\t[{get_cur_date()}]')
+
+    if sound == AudioSegment.empty():
+        history_handler.file_append(f'incorrect data;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
+    if value >= 0:
+        history_handler.file_append(f'sound volume was changed on +{value};\t[{get_cur_date()}]')
+    else:
+        history_handler.file_append(f'sound volume was changed on {value};\t[{get_cur_date()}]')
+
+    return sound + value
+
+
 def change_speed(sound: AudioSegment, speed_ratio: float) -> AudioSegment:
+    if speed_ratio >= 10:
+        speed_ratio = 10
+        history_handler.file_append(f'audio speed limits: -10x to 10x;\t[{get_cur_date()}]')
+    if speed_ratio <= -10:
+        speed_ratio = -10
+        history_handler.file_append(f'audio speed limits: -10x to 10x;\t[{get_cur_date()}]')
+
+    if sound == AudioSegment.empty():
+        history_handler.file_append(f'incorrect data;\t[{get_cur_date()}]')
+        return AudioSegment.empty()
+
     history_handler.file_append(f'sound speed changed in {speed_ratio};\t[{get_cur_date()}]')
 
     if speed_ratio >= 1:
@@ -74,6 +154,10 @@ def change_speed(sound: AudioSegment, speed_ratio: float) -> AudioSegment:
 
 
 def export(sound: AudioSegment, out_path: str, fmt: str) -> None:
+    # обработка некорректного пути
+    if fmt != 'wav' and fmt != 'mp3':
+        history_handler.file_append(f'unknown format for export;\t[{get_cur_date()}]')
+
     history_handler.file_append(f'sound saved in {out_path} in {fmt} format;\t[{get_cur_date()}]')
 
     sound.export(out_path, fmt)

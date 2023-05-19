@@ -1,2 +1,0 @@
-file cut from 1 sec;	[2023-05-17 14:29:33]
-sound saved in output/startCut.wav in wav format	[2023-05-17 14:29:33]
