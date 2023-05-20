@@ -1,12 +1,7 @@
-from datetime import datetime
 from pydub import AudioSegment
 from pydub.effects import speedup
 from history import history_handler
 from audio import base_values
-
-
-def get_cur_date():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 class AudioRedactor:
@@ -136,3 +131,6 @@ class AudioRedactor:
 
         history_handler.export_info(out_path, fmt)
         self._change_speed().export(out_path, fmt)
+
+    def tmp_save(self):
+        self.sound.export('output/output.wav', 'wav')
