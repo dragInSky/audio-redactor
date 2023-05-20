@@ -15,8 +15,8 @@ class AudioRedactor:
         self.speed_ratio = base_values.SPEED
         self.sound = AudioSegment.empty()
 
-    def set_sound(self, new_sound) -> None:
-        self.sound = new_sound
+    def set_sound(self, new_sound_path: str, new_sound_format: str) -> None:
+        self.sound_from_file(new_sound_path, new_sound_format)
 
     def sound_from_file(self, file_path: str, fmt: str) -> None:
         if fmt == 'wav' or fmt == 'mp3':

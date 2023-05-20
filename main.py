@@ -1,5 +1,5 @@
 from PyQt6 import QtWidgets
-from gui.main_window import UiMainWindow
+from gui.main_window import MainWindow
 
 import sys
 
@@ -7,7 +7,7 @@ import sys
 def main():
     app = QtWidgets.QApplication([])
     main_window = QtWidgets.QMainWindow()
-    ui = UiMainWindow()
+    ui = MainWindow()
     ui.setup_ui(main_window)
     main_window.show()
     sys.exit(app.exec())
