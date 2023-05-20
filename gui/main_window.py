@@ -14,17 +14,23 @@ from playsound import playsound
 
 class MainWindow:
     def __init__(self):
+        self.central_widget = None
+        self.grid_layout = None
+        self.vertical_layout_widget = None
+
         self.history_text = None
-        self.overlay_file_name = ''
+
+        self.speed = base_values.SPEED
+        self.volume = base_values.VOLUME
+        self.cut_from = 0
+        self.cut_to = 0
+        self.fragment_cut_from = 0
+        self.fragment_cut_to = 0
         self.append_file_name = ''
+        self.overlay_file_name = ''
         self.export_folder_name = ''
         self.format = 'wav'
-        self.fragment_cut_to = 0
-        self.fragment_cut_from = 0
-        self.cut_to = 0
-        self.cut_from = 0
-        self.volume = base_values.VOLUME
-        self.speed = base_values.SPEED
+
         self.audio_redactor = audio_redactor.AudioRedactor()
 
     def setup_ui(self, main_window):
