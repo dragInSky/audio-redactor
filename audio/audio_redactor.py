@@ -71,9 +71,7 @@ class AudioRedactor:
         self.sound -= self.volume
 
     def refresh_volume(self) -> None:
-        history_handler.volume_info(self.volume)
         self.change_volume(-self.volume)
-        history_handler.volume_info(-self.volume)
 
     def cut(self, start_pos: float, end_pos: float) -> None:
         if self.sound == AudioSegment.empty():
@@ -129,8 +127,8 @@ class AudioRedactor:
         if fmt != 'wav' and fmt != 'mp3':
             history_handler.error_unknown_format(fmt)
 
-        history_handler.export_info(out_path, fmt)
-        self._change_speed().export(out_path, fmt)
+        history_handler.export_info(out_path + '.' + fmt, fmt)
+        self._change_speed().export(out_path + '.' + fmt, fmt)
 
     def tmp_save(self):
         self.sound.export('output/output.wav', 'wav')
