@@ -1,15 +1,21 @@
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtWidgets import QPushButton
+from PyQt6.QtWidgets import QPushButton, QRadioButton
 
 from history import history_handler
 from audio import audio_redactor
 from audio import base_values
 from PyQt6 import QtGui
 
+from pathlib import Path
+
 
 class MainWindow:
 
     def __init__(self):
+        self.overlay_file_name = ''
+        self.append_file_name = ''
+        self.export_folder_name = ''
+        self.format = 'wav'
         self.fragment_cut_to = 0
         self.fragment_cut_from = 0
         self.cut_to = 0
@@ -21,19 +27,19 @@ class MainWindow:
         self.audio_redactor = audio_redactor.AudioRedactor()
 
         main_window.setObjectName("main_window")
-        main_window.resize(900, 600)
+        main_window.resize(800, 600)
 
         self.central_widget = QtWidgets.QWidget(parent=main_window)
         self.central_widget.setObjectName("central_widget")
 
         self.vertical_layout_widget = QtWidgets.QWidget(parent=self.central_widget)
-        self.vertical_layout_widget.setGeometry(QtCore.QRect(500, 0, 400, 600))
+        self.vertical_layout_widget.setGeometry(QtCore.QRect(400, 0, 400, 600))
         self.vertical_layout_widget.setObjectName("vertical_layout_widget")
 
         background_layout = QtWidgets.QWidget(parent=self.vertical_layout_widget)
         background_layout.setGeometry(QtCore.QRect(0, 0, 400, 600))
         QtGui.QImageReader.setAllocationLimit(0)
-        background_layout.setStyleSheet("border-image: url(hello.jpg);")
+        background_layout.setStyleSheet("border-image: url(resources/hello.jpg);")
 
         self.grid_layout = QtWidgets.QGridLayout(self.vertical_layout_widget)
         self.grid_layout.setContentsMargins(0, 0, 0, 0)
@@ -51,6 +57,7 @@ class MainWindow:
         self.setup_export_layout()
         self.setup_history()
         self.setup_state()
+        self.setup_export_settings()
 
         main_window.setCentralWidget(self.central_widget)
 
@@ -60,10 +67,13 @@ class MainWindow:
 
     def import_sound(self):
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
-            None, 'Single File', QtCore.QDir.rootPath(), 'Sound files(*.wav *.mp3)'
+            None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
         )
-        self.line_edit_import.setText(file_name)
-        self.audio_redactor.set_sound(file_name, file_name.split('/')[-1].split('.')[-1])
+        if file_name != '':
+            self.line_edit_import.setText(file_name)
+            self.audio_redactor.set_sound(file_name, file_name.split('/')[-1].split('.')[-1])
+            self.history_update()
+            self.state_update()
 
     def reverse_apply(self):
         self.audio_redactor.reverse()
@@ -81,6 +91,7 @@ class MainWindow:
             self.audio_redactor.change_speed(self.speed)
         else:
             self.audio_redactor.refresh_speed()
+
         self.history_update()
 
     def volume_change_event(self, value: float):
@@ -116,34 +127,77 @@ class MainWindow:
 
     def fragment_cut_apply(self):
         self.audio_redactor.fragment_cut(self.fragment_cut_from, self.fragment_cut_to)
+
         self.state_update()
         self.history_update()
 
+    def append_file_choose(self):
+        self.append_file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
+            None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
+        )
+        if self.append_file_name != '':
+            self.line_edit_append.setText(self.append_file_name)
+            self.audio_redactor.set_sound2(
+                self.append_file_name, self.append_file_name.split('/')[-1].split('.')[-1]
+            )
+            self.history_update()
+
     def append_apply(self):
-        pass
-        # self.audio_redactor.append()
-        # self.history_update()
+        if self.append_file_name != '':
+            self.audio_redactor.append()
+            self.state_update()
+        else:
+            history_handler.info_text('Выберите файл')
+        self.history_update()
+
+    def overlay_file_choose(self):
+        self.overlay_file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
+            None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
+        )
+        if self.overlay_file_name != '':
+            self.line_edit_overlay.setText(self.overlay_file_name)
+            self.audio_redactor.set_sound2(
+                self.overlay_file_name, self.overlay_file_name.split('/')[-1].split('.')[-1]
+            )
+            self.history_update()
 
     def overlay_apply(self):
-        pass
-        # self.audio_redactor.overlay()
-        # self.history_update()
+        if self.overlay_file_name != '':
+            self.audio_redactor.overlay()
+            self.state_update()
+        else:
+            history_handler.info_text('Выберите файл')
+        self.history_update()
+
+    def export_path_choose(self):
+        self.export_folder_name = QtWidgets.QFileDialog.getExistingDirectory(
+            None, 'Single directory', str(Path.home())
+        )
+        if self.export_folder_name != '':
+            self.line_edit_export.setText(self.export_folder_name)
 
     def export_sound(self):
-        self.audio_redactor.audio_export('output/output.wav', 'wav')
+        if self.export_folder_name != '':
+            self.audio_redactor.audio_export(
+                self.export_folder_name + '/' + self.line_edit_settings.text(), self.format
+            )
+        else:
+            history_handler.info_text('Выберите выходной путь')
         self.history_update()
+
+    def wav_choose(self):
+        self.format = 'wav'
+
+    def mp3_choose(self):
+        self.format = 'mp3'
 
     def setup_import_layout(self):
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_import")
 
-        label = QtWidgets.QLabel(parent=self.vertical_layout_widget)
-        label.setObjectName("label_import")
-        horizontal_layout.addWidget(label)
-        label.setText("import")
-
         self.line_edit_import = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
         self.line_edit_import.setObjectName("line_edit_path_import")
+        self.line_edit_import.setPlaceholderText('входной файл')
         self.line_edit_import.setReadOnly(True)
         horizontal_layout.addWidget(self.line_edit_import)
 
@@ -300,6 +354,8 @@ class MainWindow:
         horizontal_layout.addWidget(self.push_button_append)
         self.push_button_append.setText("выбрать файл")
 
+        self.push_button_append.clicked.connect(self.append_file_choose)
+
         self.grid_layout.addLayout(horizontal_layout, 6, 0, 1, 1)
 
     def setup_overlay_layout(self):
@@ -322,11 +378,48 @@ class MainWindow:
         horizontal_layout.addWidget(self.push_button_overlay)
         self.push_button_overlay.setText("выбрать файл")
 
+        self.push_button_overlay.clicked.connect(self.overlay_file_choose)
+
         self.grid_layout.addLayout(horizontal_layout, 7, 0, 1, 1)
 
     def setup_export_layout(self):
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_export")
+
+        self.line_edit_export = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
+        self.line_edit_export.setObjectName("line_edit_path_export")
+        self.line_edit_export.setPlaceholderText('выходная папка')
+        self.line_edit_export.setReadOnly(True)
+        horizontal_layout.addWidget(self.line_edit_export)
+
+        self.push_button_export = QtWidgets.QPushButton(parent=self.vertical_layout_widget)
+        self.push_button_export.setObjectName("push_button_path_export")
+        horizontal_layout.addWidget(self.push_button_export)
+        self.push_button_export.setText("выбрать папку")
+
+        self.push_button_export.clicked.connect(self.export_path_choose)
+
+        self.grid_layout.addLayout(horizontal_layout, 8, 0, 1, 1)
+
+    def setup_export_settings(self):
+        horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.setObjectName("horizontal_layout_settings")
+
+        radio_button_wav = QRadioButton("wav")
+        radio_button_wav.setChecked(True)
+        radio_button_wav.setText('wav')
+        radio_button_wav.toggled.connect(self.wav_choose)
+        horizontal_layout.addWidget(radio_button_wav)
+
+        radio_button_mp3 = QRadioButton("mp3")
+        radio_button_mp3.setText('mp3')
+        radio_button_mp3.toggled.connect(self.mp3_choose)
+        horizontal_layout.addWidget(radio_button_mp3)
+
+        self.line_edit_settings = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
+        self.line_edit_settings.setPlaceholderText('имя выходного файла')
+        self.line_edit_settings.setObjectName("line_edit_settings")
+        horizontal_layout.addWidget(self.line_edit_settings)
 
         button_export = QPushButton(parent=self.vertical_layout_widget)
         button_export.setText("export")
@@ -334,24 +427,14 @@ class MainWindow:
 
         button_export.clicked.connect(self.export_sound)
 
-        self.line_edit_export = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
-        self.line_edit_export.setObjectName("line_edit_path_export")
-        self.line_edit_export.setReadOnly(True)
-        horizontal_layout.addWidget(self.line_edit_export)
-
-        self.push_button_export = QtWidgets.QPushButton(parent=self.vertical_layout_widget)
-        self.push_button_export.setObjectName("push_button_path_export")
-        horizontal_layout.addWidget(self.push_button_export)
-        self.push_button_export.setText("папка для сохранения")
-
-        self.grid_layout.addLayout(horizontal_layout, 8, 0, 1, 1)
+        self.grid_layout.addLayout(horizontal_layout, 9, 0, 1, 1)
 
     def history_update(self):
         self.history_text.setPlainText(history_handler.get_text())
 
     def setup_history(self):
         self.history_text = QtWidgets.QPlainTextEdit(parent=self.central_widget)
-        self.history_text.setGeometry(QtCore.QRect(0, 0, 500, 600))
+        self.history_text.setGeometry(QtCore.QRect(0, 0, 400, 600))
         self.history_text.setObjectName("history_text")
         self.history_update()
         self.history_text.setReadOnly(True)
@@ -368,4 +451,4 @@ class MainWindow:
         horizontal_layout.addWidget(self.label_state)
         self.state_update()
 
-        self.grid_layout.addLayout(horizontal_layout, 9, 0, 1, 1)
+        self.grid_layout.addLayout(horizontal_layout, 10, 0, 1, 1)

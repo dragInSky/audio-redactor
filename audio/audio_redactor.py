@@ -14,38 +14,38 @@ class AudioRedactor:
         self.volume = base_values.VOLUME
         self.speed_ratio = base_values.SPEED
         self.sound = AudioSegment.empty()
+        self.sound2 = AudioSegment.empty()
 
     def set_sound(self, new_sound_path: str, new_sound_format: str) -> None:
-        self.sound_from_file(new_sound_path, new_sound_format)
+        self.sound = self.sound_from_file(new_sound_path, new_sound_format)
 
-    def sound_from_file(self, file_path: str, fmt: str) -> None:
-        if fmt == 'wav' or fmt == 'mp3':
-            history_handler.file_append(f'(import) from {file_path} in {fmt};\t[{get_cur_date()}]')
-            self.sound = AudioSegment.from_file(file_path, fmt)
-            return
+    def set_sound2(self, new_sound_path: str, new_sound_format: str) -> None:
+        self.sound2 = self.sound_from_file(new_sound_path, new_sound_format)
 
-        history_handler.file_append(f'(import) unknown file format: {fmt};\t[{get_cur_date()}]')
+    @staticmethod
+    def sound_from_file(file_path: str, fmt: str) -> AudioSegment:
+        history_handler.import_info(file_path, fmt)
+        return AudioSegment.from_file(file_path, fmt)
 
     def reverse(self) -> None:
         if self.sound == AudioSegment.empty():
-            history_handler.file_append(f'(reverse) incorrect data;\t[{get_cur_date()}]')
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(reverse) success;\t[{get_cur_date()}]')
-
+        history_handler.reverse_info()
         self.sound = self.sound.reverse()
 
     def change_speed(self, speed_ratio: float) -> None:
-        self.speed_ratio = speed_ratio
         if self.sound == AudioSegment.empty():
-            history_handler.file_append(f'(speed) incorrect data;\t[{get_cur_date()}]')
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(speed) {speed_ratio}x;\t[{get_cur_date()}]')
+        self.speed_ratio = speed_ratio
+        history_handler.speed_info(speed_ratio)
 
     def refresh_speed(self):
         self.speed_ratio = base_values.SPEED
-        history_handler.file_append(f'(speed) 1x;\t[{get_cur_date()}]')
+        history_handler.speed_info(base_values.SPEED)
 
     def _change_speed(self) -> AudioSegment:
         if self.speed_ratio > 1:
@@ -63,73 +63,76 @@ class AudioRedactor:
 
     def change_volume(self, value: float) -> None:
         if self.sound == AudioSegment.empty():
-            history_handler.file_append(f'(volume) incorrect data;\t[{get_cur_date()}]')
+            history_handler.error_empty_source()
             return
 
-        if value >= 0:
-            history_handler.file_append(f'(volume) +{value}db;\t[{get_cur_date()}]')
-        else:
-            history_handler.file_append(f'(volume) {value}db;\t[{get_cur_date()}]')
-
+        history_handler.volume_info(value)
         self.volume += value
         self.sound += value
 
     def silent_refresh_volume(self):
+        history_handler.volume_info(self.volume)
         self.volume = 0
         self.sound -= self.volume
 
     def refresh_volume(self) -> None:
+        history_handler.volume_info(self.volume)
         self.change_volume(-self.volume)
+        history_handler.volume_info(-self.volume)
 
     def cut(self, start_pos: float, end_pos: float) -> None:
-        if self.sound == AudioSegment.empty() or start_pos < 0 or start_pos * 1000 > len(self.sound) \
-                or end_pos < 0 or end_pos * 1000 > len(self.sound):
-            history_handler.file_append(f'(cut) incorrect data or cut positions;\t[{get_cur_date()}]')
+        if self.sound == AudioSegment.empty():
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(cut) from {start_pos} to {end_pos};\t[{get_cur_date()}]')
+        if start_pos < 0 or start_pos * 1000 > len(self.sound) \
+                or end_pos < 0 or end_pos * 1000 > len(self.sound):
+            history_handler.error_incorrect_data(start_pos, end_pos)
+            return
 
         start_pos *= 1000
         end_pos *= 1000
+
+        history_handler.cut_info(start_pos, end_pos)
 
         self.sound = self.sound[start_pos:end_pos]
 
     def fragment_cut(self, start_pos: float, end_pos: float) -> None:
-        if self.sound == AudioSegment.empty() or start_pos < 0 or start_pos * 1000 > len(self.sound) \
-                or end_pos < 0 or end_pos * 1000 > len(self.sound):
-            history_handler.file_append(f'(fragment cut) incorrect data or cut positions;\t[{get_cur_date()}]')
+        if self.sound == AudioSegment.empty():
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(fragment cut) fragment from {start_pos} to {end_pos};\t[{get_cur_date()}]')
+        if start_pos < 0 or start_pos * 1000 > len(self.sound) \
+                or end_pos < 0 or end_pos * 1000 > len(self.sound):
+            history_handler.error_incorrect_data(start_pos, end_pos)
+            return
 
         start_pos *= 1000
         end_pos *= 1000
 
+        history_handler.fragment_info(start_pos, end_pos)
+
         self.sound = self.sound[:start_pos] + self.sound[end_pos:]
 
-    def append(self, sound2: AudioSegment) -> None:
-        if self.sound == AudioSegment.empty() or sound2 == AudioSegment.empty():
-            history_handler.file_append(f'(append) incorrect data;\t[{get_cur_date()}]')
+    def append(self) -> None:
+        if self.sound == AudioSegment.empty() or self.sound2 == AudioSegment.empty():
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(append) success;\t[{get_cur_date()}]')
+        history_handler.append_info()
+        self.sound = self.sound + self.sound2
 
-        self.sound = self.sound + sound2
-
-    def overlay(self, sound2: AudioSegment) -> None:
-        if self.sound == AudioSegment.empty() or sound2 == AudioSegment.empty():
-            history_handler.file_append(f'(overlay) incorrect data;\t[{get_cur_date()}]')
+    def overlay(self) -> None:
+        if self.sound == AudioSegment.empty() or self.sound2 == AudioSegment.empty():
+            history_handler.error_empty_source()
             return
 
-        history_handler.file_append(f'(overlay) success;\t[{get_cur_date()}]')
-
-        self.sound = self.sound.overlay(sound2)
+        history_handler.overlay_info()
+        self.sound = self.sound.overlay(self.sound2)
 
     def audio_export(self, out_path: str, fmt: str) -> None:
-        # обработка некорректного пути
         if fmt != 'wav' and fmt != 'mp3':
-            history_handler.file_append(f'(export) unknown format: {fmt};\t[{get_cur_date()}]')
+            history_handler.error_unknown_format(fmt)
 
-        history_handler.file_append(f'(export) export to {out_path} in {fmt};\t[{get_cur_date()}]')
-
+        history_handler.export_info(out_path, fmt)
         self._change_speed().export(out_path, fmt)
