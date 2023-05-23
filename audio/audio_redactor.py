@@ -1,13 +1,13 @@
 from pydub import AudioSegment
 from pydub.effects import speedup
 from history import history_handler
-from audio import base_values
+import globals
 
 
 class AudioRedactor:
     def __init__(self):
-        self.volume = base_values.VOLUME
-        self.speed_ratio = base_values.SPEED
+        self.volume = globals.VOLUME
+        self.speed_ratio = globals.SPEED
         self.sound = AudioSegment.empty()
         self.sound2 = AudioSegment.empty()
 
@@ -39,8 +39,8 @@ class AudioRedactor:
         history_handler.speed_info(speed_ratio)
 
     def refresh_speed(self):
-        self.speed_ratio = base_values.SPEED
-        history_handler.speed_info(base_values.SPEED)
+        self.speed_ratio = globals.SPEED
+        history_handler.speed_info(globals.SPEED)
 
     def _change_speed(self) -> AudioSegment:
         if self.speed_ratio > 1:
@@ -130,5 +130,5 @@ class AudioRedactor:
         history_handler.export_info(out_path + '.' + fmt, fmt)
         self._change_speed().export(out_path + '.' + fmt, fmt)
 
-    def tmp_save(self):
-        self.sound.export('output/output.wav', 'wav')
+    def tmp_save(self, path_to_save: str):
+        self.sound.export(path_to_save, 'wav')

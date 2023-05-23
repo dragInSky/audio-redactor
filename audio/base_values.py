@@ -1,2 +1,0 @@
-SPEED = 1
-VOLUME = 0

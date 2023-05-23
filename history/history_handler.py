@@ -1,22 +1,26 @@
 from datetime import datetime
 
+import os.path
+
+HISTORY_PATH = os.path.join('history/history.txt')
+
 
 def get_cur_date():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def clear_history():
-    with open('history/history.txt', 'w') as handle:
+    with open(HISTORY_PATH, 'w') as handle:
         handle.write('history of actions:\n')
 
 
 def file_append(data: str):
-    with open('history/history.txt', 'a') as handle:
+    with open(HISTORY_PATH, 'a') as handle:
         handle.write(data + '\n')
 
 
 def get_text():
-    with open('history/history.txt', 'r') as handle:
+    with open(HISTORY_PATH, 'r') as handle:
         return handle.read()
 
 

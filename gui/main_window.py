@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QPushButton, QRadioButton
 from gui import history_window
 from history import history_handler
 from audio import audio_redactor
-from audio import base_values
+import globals
 from PyQt6 import QtGui
 
 from pathlib import Path
@@ -20,8 +20,8 @@ class MainWindow:
 
         self.history_text = None
 
-        self.speed = base_values.SPEED
-        self.volume = base_values.VOLUME
+        self.speed = globals.SPEED
+        self.volume = globals.VOLUME
         self.cut_from = 0
         self.cut_to = 0
         self.fragment_cut_from = 0
@@ -494,8 +494,8 @@ class MainWindow:
         self.button_play.setText("play")
 
         def play_audio():
-            self.audio_redactor.tmp_save()
-            playsound('/Users/draginsky/PycharmProjects/audio-redactor/output/output.wav')
+            self.audio_redactor.tmp_save(globals.TMP_EXPORT_PATH)
+            playsound(globals.TMP_EXPORT_PATH)
 
         self.button_play.clicked.connect(play_audio)
 
