@@ -1,15 +1,15 @@
+import globals
+
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QPushButton, QRadioButton
+from PyQt6 import QtGui
+
+from pathlib import Path
+from playsound import playsound
 
 from gui import history_window
 from history import history_handler
 from audio import audio_redactor
-import globals
-from PyQt6 import QtGui
-
-from pathlib import Path
-
-from playsound import playsound
 
 
 class MainWindow:
@@ -17,19 +17,22 @@ class MainWindow:
         self.central_widget = None
         self.grid_layout = None
         self.vertical_layout_widget = None
-
         self.history_text = None
 
         self.speed = globals.SPEED
         self.volume = globals.VOLUME
+
         self.cut_from = 0
         self.cut_to = 0
         self.fragment_cut_from = 0
         self.fragment_cut_to = 0
+
         self.append_file_name = ''
         self.overlay_file_name = ''
         self.export_folder_name = ''
         self.format = 'wav'
+
+        self.search_path = str(Path.home())
 
         self.audio_redactor = audio_redactor.AudioRedactor()
 
@@ -46,7 +49,7 @@ class MainWindow:
 
         background_layout = QtWidgets.QWidget(parent=self.vertical_layout_widget)
         background_layout.setGeometry(QtCore.QRect(0, 0, 400, 600))
-        QtGui.QImageReader.setAllocationLimit(0)
+        QtGui.QImageReader.setAllocationLimit(256)
         background_layout.setStyleSheet("border-image: url(resources/hello.jpg);")
 
         self.grid_layout = QtWidgets.QGridLayout(self.vertical_layout_widget)
@@ -74,8 +77,6 @@ class MainWindow:
         self.check_box_volume.setDisabled(True)
         self.button_cut.setDisabled(True)
         self.button_fragment.setDisabled(True)
-        self.button_append.setDisabled(True)
-        self.button_overlay.setDisabled(True)
         self.button_export.setDisabled(True)
         self.button_play.setDisabled(True)
 
@@ -102,9 +103,12 @@ class MainWindow:
 
         def import_sound():
             file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
-                None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
+                None, 'Single File', self.search_path, 'Sound files(*.wav *.mp3)'
             )
+
             if file_name != '':
+                self.search_path = file_name
+
                 self.line_edit_import.setText(file_name)
                 self.audio_redactor.set_sound(file_name, file_name.split('/')[-1].split('.')[-1])
                 self.check_box_reverse.setDisabled(False)
@@ -112,8 +116,6 @@ class MainWindow:
                 self.check_box_volume.setDisabled(False)
                 self.button_cut.setDisabled(False)
                 self.button_fragment.setDisabled(False)
-                self.button_append.setDisabled(False)
-                self.button_overlay.setDisabled(False)
                 self.button_export.setDisabled(False)
                 self.button_play.setDisabled(False)
 
@@ -125,8 +127,6 @@ class MainWindow:
                 self.check_box_volume.setDisabled(True)
                 self.button_cut.setDisabled(True)
                 self.button_fragment.setDisabled(True)
-                self.button_append.setDisabled(True)
-                self.button_overlay.setDisabled(True)
                 self.button_export.setDisabled(True)
                 self.button_play.setDisabled(True)
 
@@ -177,6 +177,7 @@ class MainWindow:
         self.double_spin_box_speed = QtWidgets.QDoubleSpinBox(parent=self.vertical_layout_widget)
         self.double_spin_box_speed.setMinimum(0.1)
         self.double_spin_box_speed.setMaximum(10.0)
+        self.double_spin_box_speed.setSingleStep(0.1)
         self.double_spin_box_speed.setValue(1)
         self.double_spin_box_speed.setObjectName("double_spin_box_speed")
 
@@ -318,19 +319,10 @@ class MainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_append")
 
-        self.button_append = QPushButton(parent=self.vertical_layout_widget)
-        self.button_append.setText("append")
-        horizontal_layout.addWidget(self.button_append)
-
-        def append_apply():
-            if self.append_file_name != '':
-                self.audio_redactor.append()
-                self.state_update()
-            else:
-                history_handler.info_text('Выберите файл')
-            self.history_text = history_window.history_update(self.history_text)
-
-        self.button_append.clicked.connect(append_apply)
+        label_append = QtWidgets.QLabel(parent=self.vertical_layout_widget)
+        label_append.setObjectName("label_append")
+        horizontal_layout.addWidget(label_append)
+        label_append.setText("append")
 
         self.line_edit_append = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
         self.line_edit_append.setObjectName("line_edit_path_append")
@@ -344,14 +336,23 @@ class MainWindow:
 
         def append_file_choose():
             self.append_file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
-                None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
+                None, 'Single File', self.search_path, 'Sound files(*.wav *.mp3)'
             )
+
             if self.append_file_name != '':
+                self.search_path = self.append_file_name
+
                 self.line_edit_append.setText(self.append_file_name)
                 self.audio_redactor.set_sound2(
                     self.append_file_name, self.append_file_name.split('/')[-1].split('.')[-1]
                 )
                 self.history_text = history_window.history_update(self.history_text)
+
+                self.audio_redactor.append()
+                self.state_update()
+            else:
+                history_handler.info_text('Выберите файл для операции append')
+            self.history_text = history_window.history_update(self.history_text)
 
         self.button_append_file_choose.clicked.connect(append_file_choose)
 
@@ -361,19 +362,10 @@ class MainWindow:
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setObjectName("horizontal_layout_overlay")
 
-        self.button_overlay = QPushButton(parent=self.vertical_layout_widget)
-        self.button_overlay.setText("overlay")
-        horizontal_layout.addWidget(self.button_overlay)
-
-        def overlay_apply():
-            if self.overlay_file_name != '':
-                self.audio_redactor.overlay()
-                self.state_update()
-            else:
-                history_handler.info_text('Выберите файл')
-            self.history_text = history_window.history_update(self.history_text)
-
-        self.button_overlay.clicked.connect(overlay_apply)
+        label_overlay = QtWidgets.QLabel(parent=self.vertical_layout_widget)
+        label_overlay.setObjectName("label_overlay")
+        horizontal_layout.addWidget(label_overlay)
+        label_overlay.setText("overlay")
 
         self.line_edit_overlay = QtWidgets.QLineEdit(parent=self.vertical_layout_widget)
         self.line_edit_overlay.setObjectName("line_edit_path_overlay")
@@ -387,14 +379,23 @@ class MainWindow:
 
         def overlay_file_choose():
             self.overlay_file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
-                None, 'Single File', str(Path.home()), 'Sound files(*.wav *.mp3)'
+                None, 'Single File', self.search_path, 'Sound files(*.wav *.mp3)'
             )
+
             if self.overlay_file_name != '':
+                self.search_path = self.overlay_file_name
+
                 self.line_edit_overlay.setText(self.overlay_file_name)
                 self.audio_redactor.set_sound2(
                     self.overlay_file_name, self.overlay_file_name.split('/')[-1].split('.')[-1]
                 )
                 self.history_text = history_window.history_update(self.history_text)
+
+                self.audio_redactor.overlay()
+                self.state_update()
+            else:
+                history_handler.info_text('Выберите файл для операции overlay')
+            self.history_text = history_window.history_update(self.history_text)
 
         self.button_overlay_file_choose.clicked.connect(overlay_file_choose)
 
@@ -417,10 +418,16 @@ class MainWindow:
 
         def export_path_choose():
             self.export_folder_name = QtWidgets.QFileDialog.getExistingDirectory(
-                None, 'Single directory', str(Path.home())
+                None, 'Single directory', self.search_path
             )
+
             if self.export_folder_name != '':
+                self.search_path = self.export_folder_name
+
                 self.line_edit_export.setText(self.export_folder_name)
+            else:
+                history_handler.info_text('Выберите выходную папку')
+            self.history_text = history_window.history_update(self.history_text)
 
         self.button_export_folder_choose.clicked.connect(export_path_choose)
 

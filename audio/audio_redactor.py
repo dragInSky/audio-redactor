@@ -131,4 +131,4 @@ class AudioRedactor:
         self._change_speed().export(out_path + '.' + fmt, fmt)
 
     def tmp_save(self, path_to_save: str):
-        self.sound.export(path_to_save, 'wav')
+        self._change_speed().export(path_to_save, 'wav')
